@@ -675,14 +675,6 @@ public interface SaaSConfig extends Config
         position = 1
     )
     default String apiKey() { return ""; }
-
-    @ConfigItem(
-        keyName = "enableLoot",
-        name = "Forward Loot",
-        description = "Enable forwarding loot messages to Discord",
-        position = 2
-    )
-    default boolean enableLoot() { return true; }
 }
 3. RuneLite Main Class Snippet (SaaSPlugin.java)
 The core logic for capturing events without blocking the game client.
