@@ -8,12 +8,20 @@ import net.runelite.client.config.ConfigItem;
 public interface FriendsChatMonitorConfig extends Config
 {
     @ConfigItem(
+        keyName = "enabled",
+        name = "Enable Monitoring",
+        description = "Toggle the monitoring and forwarding of Friends Chat messages",
+        position = 0,
+        warning = "This feature submits your IP address to a 3rd-party server not controlled or verified by RuneLite developers"
+    )
+    default boolean enabled() { return false; }
+
+    @ConfigItem(
         keyName = "apiKey",
         name = "SaaS API Key",
         description = "Your unique API key from the dashboard",
         position = 1,
-        secret = true,
-        warning = "This feature submits your IP address to a 3rd-party server not controlled or verified by RuneLite developers"
+        secret = true
     )
     default String apiKey() { return ""; }
 

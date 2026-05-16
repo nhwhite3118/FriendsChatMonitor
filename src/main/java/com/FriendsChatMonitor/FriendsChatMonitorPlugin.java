@@ -64,7 +64,7 @@ public class FriendsChatMonitorPlugin extends Plugin
     public void onChatMessage(ChatMessage event)
     {
         // Filter for Friends Chat notification
-        if (event.getType() == ChatMessageType.FRIENDSCHAT)
+        if (config.enabled() && event.getType() == ChatMessageType.FRIENDSCHAT)
         {
             String monitorName = config.friendsChatName();
             if (monitorName.isEmpty())
@@ -107,7 +107,6 @@ public class FriendsChatMonitorPlugin extends Plugin
     {
         if (config.apiKey().isEmpty())
         {
-			log.warn("FriendsChatMonitor: No API key provided");
             return;
         }
 
