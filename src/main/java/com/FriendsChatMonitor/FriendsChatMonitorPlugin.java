@@ -80,8 +80,27 @@ public class FriendsChatMonitorPlugin extends Plugin
             }
 
             String timestamp = TIME_FORMATTER.format(Instant.ofEpochSecond(event.getTimestamp()));
-            sendToSaaS(event.getName(), event.getMessage(), timestamp);
+            sendToSaaS(sanitizeName(event.getName()), event.getMessage(), timestamp);
         }
+    }
+
+    private String sanitizeName(String name)
+    {
+        if (name == null)
+        {
+            return "";
+        }
+
+        // Replace common image tags with readable text labels
+        String sanitized = name
+            .replace("<img=0>", "[PMod]")
+            .replace("<img=1>", "[JMod]")
+            .replace("<img=2>", "[Iron]")
+            .replace("<img=3>", "[UIM]")
+            .replace("<img=10>", "[HCIM]");
+
+        // Remove any remaining tags (like colors) and fix non-breaking spaces
+        return Text.removeTags(sanitized).replace('\u00A0', ' ').trim();
     }
 
     private void sendToSaaS(String author, String content, String timestamp)
