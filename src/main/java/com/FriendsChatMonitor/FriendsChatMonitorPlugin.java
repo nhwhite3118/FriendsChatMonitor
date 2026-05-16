@@ -3,8 +3,11 @@ package com.FriendsChatMonitor;
 import com.google.gson.Gson;
 import com.google.inject.Provides;
 import java.io.IOException;
+import java.sql.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.time.Instant;
+import java.time.format.*;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
@@ -45,7 +48,7 @@ public class FriendsChatMonitorPlugin extends Plugin
     private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
     
     // Replace with your actual Cloudflare Worker URL when deployed
-    private static final String API_ENDPOINT = "https://your-worker-url.workers.dev/ingest";
+    private static final String API_ENDPOINT = "https://friends-chat-monitor-cloudflare-worker.nhwhite3118.workers.dev/ingest";
 
     @Provides
     FriendsChatMonitorConfig provideConfig(ConfigManager configManager)
@@ -57,9 +60,10 @@ public class FriendsChatMonitorPlugin extends Plugin
     public void onChatMessage(ChatMessage event)
     {
         // Filter for Friends Chat notification
-        if (event.getType() == ChatMessageType.FRIENDSCHATNOTIFICATION)
+        if (event.getType() == ChatMessageType.FRIENDSCHAT)
         {
-            sendToSaaS(event.getSender(), event.getMessage());
+            Instant instant = Instant.ofEpochSecond(event.getTimestamp());
+            sendToSaaS("[" + instant.toString() + "] " + event.getName(), event.getMessage());
         }
     }
 
