@@ -14,4 +14,12 @@ public interface FriendsChatMonitorConfig extends Config
         position = 1
     )
     default String apiKey() { return ""; }
+
+    @ConfigItem(
+        keyName = "friendsChatName",
+        name = "Friends Chat Name",
+        description = "The username of the friends chat owner to monitor",
+        position = 2
+    )
+    default String friendsChatName() { return ""; }
 }
