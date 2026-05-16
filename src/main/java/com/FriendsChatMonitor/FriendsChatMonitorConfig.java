@@ -1,11 +1,11 @@
-package com.example;
+package com.FriendsChatMonitor;
 
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 
-@ConfigGroup("example")
-public interface ExampleConfig extends Config
+@ConfigGroup("FriendsChatMonitor")
+public interface FriendsChatMonitorConfig extends Config
 {
 	@ConfigItem(
 		keyName = "greeting",
