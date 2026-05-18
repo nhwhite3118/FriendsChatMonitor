@@ -116,7 +116,13 @@ public class FriendsChatMonitorPlugin extends Plugin
             return "";
         }
         // Remove chat formatting tags and fix non-breaking spaces for consistent hashing
-        return Text.removeTags((message.replace("<lt>", "<").replace("<gt>", ">").replace('\u00A0', ' ').trim()));
+        return Text.removeTags((message
+            .replace("<lt>", "<")
+            .replace("<gt>", ">")
+            .replace('\u00A0', ' ')
+            .replace("@everyone", "@\u200beveryone")
+            .replace("@here", "@\u200bhere")
+            .trim()));
     }
 
     private void sendToSaaS(String author, String content, String clientTimestamp)
