@@ -169,8 +169,12 @@ public class FriendsChatMonitorPlugin extends Plugin
             return;
         }
 
-        Map<String, String> data = new HashMap<>(); // Use clientTimestamp for display in the free mode webhook
+        Map<String, Object> data = new HashMap<>(); // Use clientTimestamp for display in the free mode webhook
         data.put("content", String.format("[%s UTC] **%s**: %s", clientTimestamp, author, content));
+
+        Map<String, Object> allowedMentions = new HashMap<>();
+        allowedMentions.put("parse", new String[0]);
+        data.put("allowed_mentions", allowedMentions);
 
         Request request = new Request.Builder()
                 .url(webhookUrl)
