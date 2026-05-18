@@ -122,6 +122,12 @@ public class FriendsChatMonitorPlugin extends Plugin
             .replace('\u00A0', ' ')
             .replace("@everyone", "@\u200beveryone")
             .replace("@here", "@\u200bhere")
+            .replace("\\", "\\\\")   // Escape backslashes first
+            .replace("*", "\\*")   // Bold / Italics
+            .replace("_", "\\_")     // Underlines / Italics
+            .replace("~", "\\~")     // Strikethrough
+            .replace("`", "\\`")     // Code blocks
+            .replace("|", "\\|")    // Spoiler tags
             .trim()));
     }
 
