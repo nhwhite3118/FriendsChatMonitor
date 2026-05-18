@@ -4,14 +4,11 @@ import com.google.gson.Gson;
 import com.google.inject.Provides;
 import java.io.IOException;
 import java.util.HashMap;
-import java.time.ZoneId;
-import java.util.Map;
-import java.time.Instant;
-import java.time.format.*;
-import javax.inject.Inject;
-import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -25,6 +22,9 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import java.util.Map;
+import javax.inject.Inject;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @PluginDescriptor(
@@ -48,7 +48,6 @@ public class FriendsChatMonitorPlugin extends Plugin
 
     private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
     
-    // Replace with your actual Cloudflare Worker URL when deployed
     private static final String API_ENDPOINT = "https://friends-chat-monitor-cloudflare-worker.nhwhite3118.workers.dev/ingest";
 
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss")
@@ -69,18 +68,25 @@ public class FriendsChatMonitorPlugin extends Plugin
             String monitorName = config.friendsChatName();
             if (monitorName.isEmpty())
             {
+                log.debug("Friends Chat name not configured");
                 return;
             }
-
+            
+            // Check that Friends Chat Name matches
             net.runelite.api.FriendsChatManager friendsChatManager = client.getFriendsChatManager();
             if (friendsChatManager == null || 
                 !Text.standardize(friendsChatManager.getOwner()).equalsIgnoreCase(Text.standardize(monitorName)))
             {
                 return;
             }
-
-            String timestamp = TIME_FORMATTER.format(Instant.ofEpochSecond(event.getTimestamp()));
-            sendToSaaS(sanitizeName(event.getName()), event.getMessage(), timestamp);
+            Instant time = Instant.ofEpochSecond(event.getTimestamp());
+            String formattedTime = TIME_FORMATTER.format(time);
+            
+            if (config.useDeduplicationService()) {
+                sendToSaaS(sanitizeName(event.getName()), sanitizeMessage(event.getMessage()), formattedTime);
+            } else {
+                sendToSingleUserWebhook(sanitizeName(event.getName()), sanitizeMessage(event.getMessage()), formattedTime);
+            }
         }
     }
 
@@ -103,17 +109,32 @@ public class FriendsChatMonitorPlugin extends Plugin
         return Text.removeTags(sanitized).replace('\u00A0', ' ').trim();
     }
 
-    private void sendToSaaS(String author, String content, String timestamp)
+    private String sanitizeMessage(String message)
+    {
+        if (message == null)
+        {
+            return "";
+        }
+        // Remove chat formatting tags and fix non-breaking spaces for consistent hashing
+        return message.replace("<lt>", "<").replace("<gt>", ">").replace('\u00A0', ' ').trim();
+    }
+
+    private void sendToSaaS(String author, String content, String clientTimestamp)
     {
         if (config.apiKey().isEmpty())
         {
+            log.warn("FriendsChatMonitor: SaaS API Key is not configured.");
             return;
+        }
+        if (!config.useDeduplicationService()) {
+            // This method should only be called if the deduplication service is enabled
+            return; 
         }
 
         Map<String, String> data = new HashMap<>();
         data.put("author", author);
+        data.put("clientTimestamp", clientTimestamp);
         data.put("content", content);
-        data.put("timestamp", timestamp);
 
         Request request = new Request.Builder()
             .url(API_ENDPOINT)
@@ -136,6 +157,36 @@ public class FriendsChatMonitorPlugin extends Plugin
             {
                 response.close();
             }
+        });
+    }
+
+    private void sendToSingleUserWebhook(String author, String content, String clientTimestamp)
+    {
+        String webhookUrl = config.singleUserWebhookUrl();
+        if (webhookUrl.isEmpty())
+        {
+            log.warn("FriendsChatMonitor: Discord Webhook URL is not configured for single-user mode.");
+            return;
+        }
+
+        Map<String, String> data = new HashMap<>(); // Use clientTimestamp for display in the free mode webhook
+        data.put("content", String.format("[%s UTC] **%s**: %s", clientTimestamp, author, content));
+
+        Request request = new Request.Builder()
+                .url(webhookUrl)
+                .post(RequestBody.create(JSON, gson.toJson(data)))
+                .build();
+
+        okHttpClient.newCall(request).enqueue(new Callback()
+        {
+            @Override
+            public void onFailure(Call call, IOException e)
+            {
+                log.warn("FriendsChatMonitor: Failed to send message to single-user Discord webhook", e);
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException { response.close(); }
         });
     }
 }
